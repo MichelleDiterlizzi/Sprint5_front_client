@@ -16,9 +16,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
 } from '@mui/material';
 import { toast } from 'react-toastify';
-import { profileService } from '../services/api';
+import { profileService, eventService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
@@ -31,13 +35,20 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [createdEvents, setCreatedEvents] = useState([]);
+  const [attendingEvents, setAttendingEvents] = useState([]);
+  const [editMode, setEditMode] = useState(false);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     const fetchProfile = async () => {
       try {
-        const response = await profileService.getProfile();
+        const response = await profileService.get();
         setFormData({
           name: response.data.name || '',
           email: response.data.email || '',
@@ -51,9 +62,19 @@ const Profile = () => {
         setLoading(false);
       }
     };
-
+    const fetchEvents = async () => {
+      try {
+        const allEvents = await eventService.getAll();
+        const events = Array.isArray(allEvents.data) ? allEvents.data : [];
+        setCreatedEvents(events.filter(e => e.creator_id === user?.id));
+        setAttendingEvents(events.filter(e => e.attendees?.some(a => a.id === user?.id)));
+      } catch (error) {
+        toast.error('Failed to load your events');
+      }
+    };
     fetchProfile();
-  }, []);
+    fetchEvents();
+  }, [isAuthenticated, navigate, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -115,74 +136,119 @@ const Profile = () => {
     );
   }
 
+  if (!formData.name && !formData.email) {
+    return (
+      <Container>
+        <Typography color="error">No profile data found.</Typography>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="md">
       <Grid container spacing={4}>
         <Grid item xs={12} md={8}>
           <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
             <Typography variant="h4" component="h1" gutterBottom>
-              Profile Settings
+              Profile
             </Typography>
-
-            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="name"
-                label="Full Name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-              />
-
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-              />
-
-              <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-                Change Password
-              </Typography>
-
-              <TextField
-                margin="normal"
-                fullWidth
-                name="password"
-                label="New Password"
-                type="password"
-                id="password"
-                value={formData.password}
-                onChange={handleChange}
-              />
-
-              <TextField
-                margin="normal"
-                fullWidth
-                name="password_confirmation"
-                label="Confirm New Password"
-                type="password"
-                id="password_confirmation"
-                value={formData.password_confirmation}
-                onChange={handleChange}
-              />
-
-              <Button
-                type="submit"
-                variant="contained"
-                sx={{ mt: 3 }}
-                disabled={submitting}
-              >
-                {submitting ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </Box>
+            {!editMode ? (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1"><b>Name:</b> {formData.name}</Typography>
+                <Typography variant="subtitle1"><b>Email:</b> {formData.email}</Typography>
+                <Button variant="outlined" sx={{ mt: 2 }} onClick={() => setEditMode(true)}>
+                  Edit Profile
+                </Button>
+              </Box>
+            ) : (
+              <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="name"
+                  label="Full Name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="email"
+                  label="Email Address"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+                <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+                  Change Password
+                </Typography>
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  name="password"
+                  label="New Password"
+                  type="password"
+                  id="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  name="password_confirmation"
+                  label="Confirm New Password"
+                  type="password"
+                  id="password_confirmation"
+                  value={formData.password_confirmation}
+                  onChange={handleChange}
+                />
+                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={() => setEditMode(false)}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </Button>
+                </Box>
+              </Box>
+            )}
+            <Divider sx={{ my: 4 }} />
+            <Typography variant="h5" gutterBottom>Events Created by You</Typography>
+            <List>
+              {createdEvents.length === 0 && (
+                <ListItem><ListItemText primary="You haven't created any events yet." /></ListItem>
+              )}
+              {createdEvents.map(event => (
+                <ListItem key={event.id} button onClick={() => navigate(`/events/${event.id}`)}>
+                  <ListItemText primary={event.title} secondary={new Date(event.event_date).toLocaleString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })} />
+                </ListItem>
+              ))}
+            </List>
+            <Divider sx={{ my: 4 }} />
+            <Typography variant="h5" gutterBottom>Events You're Attending</Typography>
+            <List>
+              {attendingEvents.length === 0 && (
+                <ListItem><ListItemText primary="You haven't joined any events yet." /></ListItem>
+              )}
+              {attendingEvents.map(event => (
+                <ListItem key={event.id} button onClick={() => navigate(`/events/${event.id}`)}>
+                  <ListItemText primary={event.title} secondary={new Date(event.event_date).toLocaleString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })} />
+                </ListItem>
+              ))}
+            </List>
           </Paper>
         </Grid>
 
