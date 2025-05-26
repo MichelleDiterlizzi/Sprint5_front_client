@@ -1,16 +1,30 @@
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
+import EventList from './pages/EventList';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import CreateEvent from './pages/CreateEvent';
+import EventDetail from './pages/EventDetail';
+import EditEvent from './pages/EditEvent';
+import Profile from './pages/Profile';
+import Home from './pages/Home';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <Layout>
-          <div>
-            <h1>Welcome to Event Manager</h1>
-            <p>This is the home page.</p>
-          </div>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/events" element={<EventList />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/events/new" element={<CreateEvent />} />
+            <Route path="/events/:id" element={<EventDetail />} />
+            <Route path="/events/:id/edit" element={<EditEvent />} />
+            <Route path="/profile" element={<Profile />} />
+          </Routes>
         </Layout>
       </AuthProvider>
     </Router>
