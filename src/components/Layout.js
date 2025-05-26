@@ -1,16 +1,10 @@
 import { AppBar, Box, Container, Typography } from '@mui/material';
+import Navbar from './Navbar';
 
 const Layout = ({ children }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar position="static">
-        <Container maxWidth="xl">
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, py: 2 }}>
-            Event Manager
-          </Typography>
-        </Container>
-      </AppBar>
-
+      <Navbar />
       <Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
         {children}
       </Container>
