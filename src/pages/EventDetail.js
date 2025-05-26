@@ -20,7 +20,7 @@ const EventDetail = () => {
     try {
       const response = await eventService.getById(id);
       setEvent(response.event);
-      setAttending(response.event.attendees?.some((a) => a.id === user?.id));
+      setAttending(response.event?.attendees?.some((a) => a.id === user?.id));
       setLoading(false);
     } catch (err) {
       console.error('Error fetching event details:', err);
@@ -112,7 +112,7 @@ const EventDetail = () => {
   const isCreator = user && (event.user_id === user.id || user.role === 'admin');
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col">
+    <div className="bg-gray-100 min-h-screen pt-8 pb-2">
       {/* Header */}
       <div className="bg-white shadow-sm p-2">
         <button
@@ -124,30 +124,26 @@ const EventDetail = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden p-2">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-2">
+      <div className="flex-1 overflow-hidden p-2 pb-0">
+        <div className="max-w-4xl mx-auto bg-white rounded-b shadow p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 mb-0">
           {/* Image Section */}
-          <div className="relative w-full h-32 lg:h-auto">
+          <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-auto">
             <div className="w-full h-full">
-              <img
-                src={getEventImage(event)}
-                alt={event.title}
-                className="w-full h-full object-contain"
-                style={{ maxHeight: '200px' }}
-              />
-            </div>
-            <div className="absolute top-1 right-1 bg-white px-1.5 py-0.5 rounded-full shadow-sm">
-              <span className="text-xs">
-                {event.is_free ? 'Gratuito' : `${event.price}€`}
-              </span>
+              <div className="flex items-center justify-center">
+                <img
+                  src={getEventImage(event)}
+                  alt={event.title}
+                  className="w-full max-w-xl object-contain rounded shadow"
+                  style={{ maxHeight: '420px' }}
+                />
+              </div>
             </div>
           </div>
 
           {/* Details Section */}
           <div className="bg-white rounded p-2 flex flex-col h-full">
             <div className="flex-1">
-              <h1 className="text-lg font-bold mb-1">{event.title}</h1>
-              
+              <h1 className="text-base lg:text-lg font-bold mb-1 break-words">{event.title}</h1>
               <div className="space-y-1 mb-2">
                 <div className="flex items-center text-xs">
                   <span className="text-gray-500 mr-1">📍</span>
@@ -156,18 +152,21 @@ const EventDetail = () => {
                     {event.address && ` - ${event.address}`}
                   </span>
                 </div>
-                
                 <div className="flex items-center text-xs">
                   <span className="text-gray-500 mr-1">📅</span>
-                  <span>{new Date(event.event_date).toLocaleString()}</span>
+                  <span>{new Date(event.event_date).toLocaleString('es-ES', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}</span>
                 </div>
               </div>
-
               <div className="mb-2">
                 <h2 className="text-xs font-semibold mb-0.5">Descripción</h2>
-                <p className="text-xs text-gray-600">{event.description}</p>
+                <p className="text-xs lg:text-sm text-gray-600 break-words">{event.description}</p>
               </div>
-
               <div className="flex gap-1 mb-2">
                 <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs">
                   {event.category?.name || 'Sin categoría'}
@@ -178,10 +177,16 @@ const EventDetail = () => {
                   </span>
                 )}
               </div>
-
-              <div className="text-xs mb-2">
+              <div className="text-xs mb-1">
                 <span className="text-gray-500">Creado por: </span>
                 <span className="font-medium">{event.creator?.name || 'Anónimo'}</span>
+              </div>
+              <div className="text-base font-semibold text-gray-800 mb-2">
+                {event.is_free ? (
+                  <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full">GRATUITO</span>
+                ) : (
+                  <span className="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full border border-yellow-300">{event.price}€</span>
+                )}
               </div>
             </div>
 
@@ -190,19 +195,12 @@ const EventDetail = () => {
               {isAuthenticated && !isCreator && (
                 <Button
                   variant={attending ? "contained" : "outlined"}
-                  color={attending ? "error" : undefined}
-                  style={attending ? { fontWeight: 500, fontSize: '1.1rem', marginTop: '1rem' } : {
-                    color: pink,
-                    borderColor: pink,
-                    fontWeight: 500,
-                    fontSize: '1.1rem',
-                    marginTop: '1rem',
-                  }}
-                  size="large"
-                  fullWidth
+                  color={attending ? "error" : "primary"}
+                  style={{ fontWeight: 500, fontSize: '1.1rem', marginTop: '1rem' }}
                   onClick={handleAttendance}
+                  fullWidth
                 >
-                  {attending ? 'Eliminar tu participación' : 'Participar en el Evento'}
+                  {attending ? 'Eliminar participación' : 'Participa al evento'}
                 </Button>
               )}
               {!isAuthenticated && (
