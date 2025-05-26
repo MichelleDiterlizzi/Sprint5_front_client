@@ -53,15 +53,17 @@ export const authService = {
 
 export const eventService = {
   getAll: async () => {
-    const response = await api.get('/events');
-    return response.data;
+    try {
+      const response = await api.get('/events');
+      console.log('API Response in service:', response);
+      return response.data;
+    } catch (error) {
+      console.error('Error in eventService.getAll:', error);
+      throw error;
+    }
   },
-  getPopular: async () => {
-    const response = await api.get('/events/popular');
-    return response.data;
-  },
-  getFree: async () => {
-    const response = await api.get('/events/free');
+  getById: async (id) => {
+    const response = await api.get(`/events/${id}`);
     return response.data;
   },
   create: async (eventData) => {
@@ -76,13 +78,57 @@ export const eventService = {
     const response = await api.delete(`/events/${id}`);
     return response.data;
   },
-  attend: async (eventId) => {
-    const response = await api.post(`/events/${eventId}/users`);
+  attend: async (id) => {
+    const response = await api.post(`/events/${id}/attend`);
     return response.data;
   },
-  unattend: async (eventId) => {
-    const response = await api.delete(`/events/${eventId}/users`);
+  attendEvent: async (id, guests_count) => {
+    const response = await api.post(`/events/${id}/attend`, { guests_count });
     return response.data;
+  },
+  getPopular: async () => {
+    try {
+      const response = await api.get('/events/popular');
+      console.log('Popular events API response:', response);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching popular events:', error);
+      throw error;
+    }
+  },
+  getFree: async () => {
+    try {
+      const response = await api.get('/events/free');
+      console.log('Free events API response:', response);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching free events:', error);
+      throw error;
+    }
+  },
+  getBeforeTime: async (time) => {
+    try {
+      const response = await api.get('/events/before-time', { 
+        params: { time_before: time } 
+      });
+      console.log('Before time events API response:', response);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching before time events:', error);
+      throw error;
+    }
+  },
+  getAfterTime: async (time) => {
+    try {
+      const response = await api.get('/events/after-time', { 
+        params: { time_after: time } 
+      });
+      console.log('After time events API response:', response);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching after time events:', error);
+      throw error;
+    }
   },
 };
 
@@ -91,22 +137,34 @@ export const categoryService = {
     const response = await api.get('/categories');
     return response.data;
   },
-  getOne: async (id) => {
+  getById: async (id) => {
     const response = await api.get(`/categories/${id}`);
+    return response.data;
+  },
+  create: async (categoryData) => {
+    const response = await api.post('/categories', categoryData);
+    return response.data;
+  },
+  update: async (id, categoryData) => {
+    const response = await api.put(`/categories/${id}`, categoryData);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/categories/${id}`);
     return response.data;
   },
 };
 
 export const profileService = {
-  getProfile: async () => {
+  get: async () => {
     const response = await api.get('/users/profile');
     return response.data;
   },
-  updateProfile: async (profileData) => {
+  update: async (profileData) => {
     const response = await api.put('/users/profile', profileData);
     return response.data;
   },
-  deleteProfile: async () => {
+  delete: async () => {
     const response = await api.delete('/users/profile');
     return response.data;
   },

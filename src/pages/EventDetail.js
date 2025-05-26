@@ -1,56 +1,36 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Container,
-  Paper,
-  Typography,
-  Box,
-  Button,
-  Chip,
-  Grid,
-  Divider,
-} from '@mui/material';
-import {
-  CalendarToday,
-  LocationOn,
-  AttachMoney,
-  People,
-} from '@mui/icons-material';
-import { format } from 'date-fns';
 import { toast } from 'react-toastify';
 import { eventService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import Button from '@mui/material/Button';
+
+const pink = '#ec4899'; // Tailwind's pink-500
 
 const EventDetail = () => {
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [attending, setAttending] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attending, setAttending] = useState(false);
+  const { user, isAuthenticated } = useAuth();
 
-  const fetchEvent = async () => {
+  const fetchEventDetails = async () => {
     try {
-      const response = await eventService.getAll();
-      const foundEvent = response.data.find((e) => e.id === parseInt(id));
-      if (foundEvent) {
-        setEvent(foundEvent);
-        setAttending(foundEvent.attendees?.some((a) => a.id === user?.id));
-      } else {
-        toast.error('Event not found');
-        navigate('/events');
-      }
-    } catch (error) {
-      console.error('Error fetching event:', error);
-      toast.error('Failed to load event details');
-      navigate('/events');
-    } finally {
+      const response = await eventService.getById(id);
+      setEvent(response.event);
+      setAttending(response.event.attendees?.some((a) => a.id === user?.id));
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching event details:', err);
+      setError('Error al cargar los detalles del evento');
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchEvent();
+    fetchEventDetails();
   }, [id, user]);
 
   const handleAttendance = async () => {
@@ -62,18 +42,33 @@ const EventDetail = () => {
     try {
       if (attending) {
         await eventService.unattend(id);
-        toast.success('Successfully unregistered from the event');
+        setAttending(false);
+        toast.success('Has eliminado tu participación en el evento');
       } else {
-        await eventService.attend(id);
-        toast.success('Successfully registered for the event');
+        let guests = 0;
+        const input = window.prompt('¿Cuántos invitados llevas? (0 si vas solo)', '0');
+        if (input === null) return; // Cancelado
+        guests = parseInt(input, 10);
+        if (isNaN(guests) || guests < 0) {
+          toast.error('Por favor, introduce un número válido de invitados');
+          return;
+        }
+        await eventService.attendEvent(id, guests);
+        setAttending(true);
+        toast.success('Te has apuntado al evento');
       }
-      fetchEvent();
+      await fetchEventDetails(); // Actualizar los detalles del evento
     } catch (error) {
       console.error('Error updating attendance:', error);
-      toast.error(
-        error.response?.data?.message ||
-          'Failed to update event registration status'
-      );
+      if (error.response?.status === 409) {
+        toast.error('Ya estás participando en este evento');
+        setAttending(true);
+      } else {
+        toast.error(
+          error.response?.data?.message ||
+          'Error al actualizar la asistencia al evento'
+        );
+      }
     }
   };
 
@@ -82,148 +77,180 @@ const EventDetail = () => {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este evento?')) {
       try {
         await eventService.delete(id);
-        toast.success('Event deleted successfully');
+        toast.success('Evento eliminado correctamente');
         navigate('/events');
       } catch (error) {
         console.error('Error deleting event:', error);
-        toast.error('Failed to delete event');
+        toast.error('Error al eliminar el evento');
       }
     }
   };
 
-  if (loading) {
-    return (
-      <Container>
-        <Typography>Loading event details...</Typography>
-      </Container>
-    );
-  }
+  if (loading) return <div className="text-center py-8">Cargando detalles del evento...</div>;
+  if (error) return <div className="text-center text-red-500 py-8">{error}</div>;
+  if (!event) return <div className="text-center py-8">Evento no encontrado</div>;
 
-  if (!event) {
-    return (
-      <Container>
-        <Typography>Event not found</Typography>
-      </Container>
-    );
-  }
+  const getEventImage = (event) => {
+    if (event.image && event.image.startsWith('http')) {
+      return event.image;
+    }
+    if (event.image) {
+      return `http://localhost:8000/storage/${event.image}`;
+    }
+    if (event.category?.image) {
+      if (event.category.image.startsWith('http')) {
+        return event.category.image;
+      }
+      return `http://localhost:8000/storage/${event.category.image}`;
+    }
+    return 'https://placehold.co/600x400/333333/FFFFFF?text=Evento';
+  };
 
-  const isOwner = event.user_id === user?.id;
+  const isCreator = user && (event.user_id === user.id || user.role === 'admin');
 
   return (
-    <Container maxWidth="md">
-      <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-        <Box
-          component="img"
-          src={event.image || 'https://source.unsplash.com/random?event'}
-          alt={event.title}
-          sx={{
-            width: '100%',
-            height: 300,
-            objectFit: 'cover',
-            borderRadius: 1,
-            mb: 4,
-          }}
-        />
+    <div className="h-screen bg-gray-100 flex flex-col">
+      {/* Header */}
+      <div className="bg-white shadow-sm p-2">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-blue-600 hover:text-blue-800 flex items-center"
+        >
+          <span className="text-xs">← Volver</span>
+        </button>
+      </div>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              {event.title}
-            </Typography>
-
-            <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip
-                icon={<CalendarToday />}
-                label={format(new Date(event.date), 'PPP')}
+      {/* Main Content */}
+      <div className="flex-1 overflow-hidden p-2">
+        <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-2">
+          {/* Image Section */}
+          <div className="relative w-full h-32 lg:h-auto">
+            <div className="w-full h-full">
+              <img
+                src={getEventImage(event)}
+                alt={event.title}
+                className="w-full h-full object-contain"
+                style={{ maxHeight: '200px' }}
               />
-              <Chip
-                icon={<LocationOn />}
-                label={event.location || 'Location TBA'}
-              />
-              <Chip
-                icon={<AttachMoney />}
-                label={event.price === 0 ? 'Free' : `$${event.price}`}
-                color={event.price === 0 ? 'success' : 'default'}
-              />
-              <Chip
-                icon={<People />}
-                label={`${event.attendees?.length || 0} attending`}
-              />
-            </Box>
+            </div>
+            <div className="absolute top-1 right-1 bg-white px-1.5 py-0.5 rounded-full shadow-sm">
+              <span className="text-xs">
+                {event.is_free ? 'Gratuito' : `${event.price}€`}
+              </span>
+            </div>
+          </div>
 
-            <Typography variant="body1" paragraph>
-              {event.description}
-            </Typography>
+          {/* Details Section */}
+          <div className="bg-white rounded p-2 flex flex-col h-full">
+            <div className="flex-1">
+              <h1 className="text-lg font-bold mb-1">{event.title}</h1>
+              
+              <div className="space-y-1 mb-2">
+                <div className="flex items-center text-xs">
+                  <span className="text-gray-500 mr-1">📍</span>
+                  <span>
+                    {event.location}
+                    {event.address && ` - ${event.address}`}
+                  </span>
+                </div>
+                
+                <div className="flex items-center text-xs">
+                  <span className="text-gray-500 mr-1">📅</span>
+                  <span>{new Date(event.event_date).toLocaleString()}</span>
+                </div>
+              </div>
 
-            <Box sx={{ mt: 4 }}>
-              <Typography variant="h6" gutterBottom>
-                Category
-              </Typography>
-              <Chip label={event.category?.name || 'Uncategorized'} />
-            </Box>
-          </Grid>
+              <div className="mb-2">
+                <h2 className="text-xs font-semibold mb-0.5">Descripción</h2>
+                <p className="text-xs text-gray-600">{event.description}</p>
+              </div>
 
-          <Grid item xs={12} md={4}>
-            <Paper elevation={1} sx={{ p: 2 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {isAuthenticated && !isOwner && (
-                  <Button
-                    variant="contained"
-                    color={attending ? 'error' : 'primary'}
-                    onClick={handleAttendance}
-                    fullWidth
-                  >
-                    {attending ? 'Cancel Registration' : 'Register for Event'}
-                  </Button>
+              <div className="flex gap-1 mb-2">
+                <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs">
+                  {event.category?.name || 'Sin categoría'}
+                </span>
+                {event.is_free && (
+                  <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full text-xs">
+                    Gratuito
+                  </span>
                 )}
+              </div>
 
-                {isOwner && (
-                  <>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      onClick={handleEdit}
-                      fullWidth
-                    >
-                      Edit Event
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      onClick={handleDelete}
-                      fullWidth
-                    >
-                      Delete Event
-                    </Button>
-                  </>
-                )}
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
+              <div className="text-xs mb-2">
+                <span className="text-gray-500">Creado por: </span>
+                <span className="font-medium">{event.creator?.name || 'Anónimo'}</span>
+              </div>
+            </div>
 
-        {event.attendees && event.attendees.length > 0 && (
-          <>
-            <Divider sx={{ my: 4 }} />
-            <Typography variant="h6" gutterBottom>
-              Attendees
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {event.attendees.map((attendee) => (
-                <Chip
-                  key={attendee.id}
-                  label={attendee.name}
+            {/* Action Buttons - Now at the bottom */}
+            <div className="mt-auto pt-4 border-t">
+              {isAuthenticated && !isCreator && (
+                <Button
+                  variant={attending ? "contained" : "outlined"}
+                  color={attending ? "error" : undefined}
+                  style={attending ? { fontWeight: 500, fontSize: '1.1rem', marginTop: '1rem' } : {
+                    color: pink,
+                    borderColor: pink,
+                    fontWeight: 500,
+                    fontSize: '1.1rem',
+                    marginTop: '1rem',
+                  }}
+                  size="large"
+                  fullWidth
+                  onClick={handleAttendance}
+                >
+                  {attending ? 'Eliminar tu participación' : 'Participar en el Evento'}
+                </Button>
+              )}
+              {!isAuthenticated && (
+                <Button
                   variant="outlined"
-                />
-              ))}
-            </Box>
-          </>
-        )}
-      </Paper>
-    </Container>
+                  style={{
+                    color: pink,
+                    borderColor: pink,
+                    fontWeight: 500,
+                    fontSize: '1.1rem',
+                    marginTop: '1rem',
+                  }}
+                  size="large"
+                  fullWidth
+                  onClick={() => navigate('/login')}
+                >
+                  Participar en el Evento
+                </Button>
+              )}
+              {isCreator && (
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="large"
+                    fullWidth
+                    style={{ fontWeight: 500, fontSize: '1.1rem' }}
+                    onClick={handleEdit}
+                  >
+                    Editar Evento
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="large"
+                    fullWidth
+                    style={{ fontWeight: 500, fontSize: '1.1rem' }}
+                    onClick={handleDelete}
+                  >
+                    Eliminar Evento
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
