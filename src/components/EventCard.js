@@ -6,26 +6,13 @@ const EventCard = ({ event }) => {
   const [imageError, setImageError] = useState(false);
 
   const getEventImage = (event) => {
-    if (imageError) {
-      return getDefaultImage(event.category?.name);
-    }
-
-    if (event.image && event.image.startsWith('http')) {
+    if (event.image) {
       return event.image;
     }
-    if (event.image && event.image.startsWith('img/')) {
-      return `http://localhost:8000/storage/${event.image}`;
+    if (event.category && event.category.image) {
+      return event.category.image;
     }
-    if (event.image) {
-      return `http://localhost:8000/storage/${event.image}`;
-    }
-    if (event.category?.image) {
-      if (event.category.image.startsWith('http')) {
-        return event.category.image;
-      }
-      return `http://localhost:8000/storage/${event.category.image}`;
-    }
-    return getDefaultImage(event.category?.name);
+    return 'https://picsum.photos/800/400';
   };
 
   const getDefaultImage = (categoryName) => {

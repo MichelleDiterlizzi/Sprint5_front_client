@@ -59,6 +59,23 @@ const Home = () => {
   if (active === 'popular') eventsToShow = popular;
   if (active === 'free') eventsToShow = free;
 
+  const getCategoryImage = (cat) => {
+    if (cat.image) {
+      return cat.image;
+    }
+    return 'https://picsum.photos/800/400';
+  };
+
+  const getEventImage = (event) => {
+    if (event.image) {
+      return event.image;
+    }
+    if (event.category && event.category.image) {
+      return event.category.image;
+    }
+    return 'https://picsum.photos/800/400';
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-4xl font-semibold mb-8 text-gray-800 text-center tracking-tight">Explora los mejores eventos en tu ciudad</h1>
@@ -91,10 +108,10 @@ const Home = () => {
               {categories.map(cat => (
                 <div key={cat.id} className="flex flex-col items-center p-2 bg-white rounded shadow">
                   <img
-                    src={cat.image && cat.image !== 'img/' ? `http://localhost:8000/storage/${cat.image}` : 'https://source.unsplash.com/random?category'}
+                    src={getCategoryImage(cat)}
                     alt={cat.name}
                     className="w-20 h-20 object-cover rounded mb-2 border"
-                    onError={e => { e.target.onerror = null; e.target.src = 'https://source.unsplash.com/random?category'; }}
+                    onError={e => { e.target.onerror = null; e.target.src = 'https://picsum.photos/800/400'; }}
                   />
                   <span className="text-sm font-medium text-gray-700 text-center">{cat.name}</span>
                 </div>
@@ -111,14 +128,6 @@ const Home = () => {
             <div className="col-span-full text-center text-gray-500 py-8 w-full">No hay eventos para mostrar</div>
           ) : (
             eventsToShow.map(event => {
-              let eventImage = '';
-              if (event.image && event.image !== 'img/' && event.image !== '') {
-                eventImage = `http://localhost:8000/storage/${event.image}`;
-              } else if (event.category?.image && event.category.image !== 'img/' && event.category.image !== '') {
-                eventImage = `http://localhost:8000/storage/${event.category.image}`;
-              } else {
-                eventImage = 'https://source.unsplash.com/random?event';
-              }
               return (
                 <div
                   key={event.id}
@@ -127,10 +136,10 @@ const Home = () => {
                 >
                   <div className="w-full h-40 bg-gray-100 flex items-center justify-center overflow-hidden">
                     <img
-                      src={eventImage}
+                      src={getEventImage(event)}
                       alt={event.title}
                       className="w-full h-full object-cover"
-                      onError={e => { e.target.onerror = null; e.target.src = 'https://source.unsplash.com/random?event'; }}
+                      onError={e => { e.target.onerror = null; e.target.src = 'https://picsum.photos/800/400'; }}
                     />
                   </div>
                   <div className="flex-1 flex flex-col p-4">

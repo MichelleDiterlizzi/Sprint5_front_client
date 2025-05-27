@@ -86,30 +86,49 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('handleSubmit called');
+    console.log('formData:', formData);
+    let hasError = false;
+    if (formData.password && formData.password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      hasError = true;
+    }
     if (formData.password && formData.password !== formData.password_confirmation) {
       toast.error('Passwords do not match');
-      return;
+      hasError = true;
     }
-
+    if (hasError) return;
     setSubmitting(true);
-
     try {
       const updateData = {
         name: formData.name,
         email: formData.email,
         ...(formData.password && { password: formData.password }),
       };
-
-      await profileService.updateProfile(updateData);
+      console.log('Sending update:', updateData);
+      const response = await profileService.update(updateData);
+      console.log('Update response:', response);
       toast.success('Profile updated successfully!');
       setFormData((prev) => ({
         ...prev,
         password: '',
         password_confirmation: '',
       }));
+      setEditMode(false);
+      // Recargar datos de perfil tras guardar
+      const refreshed = await profileService.get();
+      setFormData({
+        name: refreshed.data.name || '',
+        email: refreshed.data.email || '',
+        password: '',
+        password_confirmation: '',
+      });
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      toast.error('Error: ' + (error.response?.data?.message || error.message));
+      if (error.response?.data?.errors) {
+        error.response.data.errors.forEach(msg => toast.error(msg));
+      }
     } finally {
       setSubmitting(false);
     }

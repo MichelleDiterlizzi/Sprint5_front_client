@@ -94,19 +94,13 @@ const EventDetail = () => {
   if (!event) return <div className="text-center py-8">Evento no encontrado</div>;
 
   const getEventImage = (event) => {
-    if (event.image && event.image.startsWith('http')) {
+    if (event.image) {
       return event.image;
     }
-    if (event.image) {
-      return `http://localhost:8000/storage/${event.image}`;
+    if (event.category && event.category.image) {
+      return event.category.image;
     }
-    if (event.category?.image) {
-      if (event.category.image.startsWith('http')) {
-        return event.category.image;
-      }
-      return `http://localhost:8000/storage/${event.category.image}`;
-    }
-    return 'https://placehold.co/600x400/333333/FFFFFF?text=Evento';
+    return 'https://picsum.photos/800/400';
   };
 
   const isCreator = user && (event.user_id === user.id || user.role === 'admin');

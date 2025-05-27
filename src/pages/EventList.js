@@ -13,19 +13,13 @@ import Grid from '@mui/material/Grid';
 import { toast } from 'react-toastify';
 
 const getEventImage = (event) => {
-  if (event.image && event.image !== 'img/' && event.image.startsWith('http')) {
+  if (event.image) {
     return event.image;
   }
-  if (event.image && event.image !== 'img/') {
-    return `http://localhost:8000/storage/${event.image}`;
+  if (event.category && event.category.image) {
+    return event.category.image;
   }
-  if (event.category?.image) {
-    if (event.category.image.startsWith('http')) {
-      return event.category.image;
-    }
-    return `http://localhost:8000/storage/${event.category.image}`;
-  }
-  return 'https://source.unsplash.com/random?event';
+  return 'https://picsum.photos/800/400';
 };
 
 const EventList = () => {

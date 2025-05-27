@@ -1,173 +1,110 @@
-import axios from 'axios';
+import { mockEvents, mockCategories, mockUser } from '../utils/mockData';
 
-const API_URL = 'http://localhost:8000/api';
-
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
-
-// Request interceptor for API calls
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor for API calls
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
-
+// Servicios simulados para el nivel 1
 export const authService = {
   login: async (credentials) => {
-    const response = await api.post('/login', credentials);
-    return response.data;
+    // Simulando login exitoso
+    return { 
+      data: { 
+        token: 'mock-token',
+        user: mockUser 
+      } 
+    };
   },
   register: async (userData) => {
-    const response = await api.post('/register', userData);
-    return response.data;
+    // Simulando registro exitoso
+    return { 
+      data: { 
+        message: 'Usuario registrado con éxito',
+        user: { ...mockUser, ...userData }
+      } 
+    };
   },
   logout: async () => {
-    const response = await api.post('/users/logout');
-    return response.data;
+    // Simulando logout
+    return { data: { message: 'Sesión cerrada con éxito' } };
   },
 };
 
 export const eventService = {
   getAll: async () => {
-    try {
-      const response = await api.get('/events');
-      console.log('API Response in service:', response);
-      return response.data;
-    } catch (error) {
-      console.error('Error in eventService.getAll:', error);
-      throw error;
-    }
+    return { data: mockEvents };
   },
   getById: async (id) => {
-    const response = await api.get(`/events/${id}`);
-    return response.data;
+    const event = mockEvents.find(e => e.id === parseInt(id));
+    return { data: event };
   },
   create: async (eventData) => {
-    const response = await api.post('/events', eventData);
-    return response.data;
+    const newEvent = {
+      id: mockEvents.length + 1,
+      ...eventData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    return { data: newEvent };
   },
   update: async (id, eventData) => {
-    const response = await api.put(`/events/${id}`, eventData);
-    return response.data;
+    const event = mockEvents.find(e => e.id === parseInt(id));
+    const updatedEvent = { ...event, ...eventData, updated_at: new Date().toISOString() };
+    return { data: updatedEvent };
   },
   delete: async (id) => {
-    const response = await api.delete(`/events/${id}`);
-    return response.data;
+    return { data: { message: 'Evento eliminado con éxito' } };
   },
   attend: async (id) => {
-    const response = await api.post(`/events/${id}/attend`);
-    return response.data;
+    return { data: { message: 'Asistencia registrada con éxito' } };
   },
   attendEvent: async (id, guests_count) => {
-    const response = await api.post(`/events/${id}/attend`, { guests_count });
-    return response.data;
+    return { data: { message: `Asistencia registrada con ${guests_count} invitados` } };
   },
   getPopular: async () => {
-    try {
-      const response = await api.get('/events/popular');
-      console.log('Popular events API response:', response);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching popular events:', error);
-      throw error;
-    }
+    return { data: mockEvents.slice(0, 2) };
   },
   getFree: async () => {
-    try {
-      const response = await api.get('/events/free');
-      console.log('Free events API response:', response);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching free events:', error);
-      throw error;
-    }
+    return { data: mockEvents.filter(e => e.price === 0) };
   },
   getBeforeTime: async (time) => {
-    try {
-      const response = await api.get('/events/before-time', { 
-        params: { time_before: time } 
-      });
-      console.log('Before time events API response:', response);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching before time events:', error);
-      throw error;
-    }
+    return { data: mockEvents.filter(e => new Date(e.date) < new Date(time)) };
   },
   getAfterTime: async (time) => {
-    try {
-      const response = await api.get('/events/after-time', { 
-        params: { time_after: time } 
-      });
-      console.log('After time events API response:', response);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching after time events:', error);
-      throw error;
-    }
+    return { data: mockEvents.filter(e => new Date(e.date) > new Date(time)) };
   },
 };
 
 export const categoryService = {
   getAll: async () => {
-    const response = await api.get('/categories');
-    return response.data;
+    return { data: mockCategories };
   },
   getById: async (id) => {
-    const response = await api.get(`/categories/${id}`);
-    return response.data;
+    const category = mockCategories.find(c => c.id === parseInt(id));
+    return { data: category };
   },
   create: async (categoryData) => {
-    const response = await api.post('/categories', categoryData);
-    return response.data;
+    const newCategory = {
+      id: mockCategories.length + 1,
+      ...categoryData
+    };
+    return { data: newCategory };
   },
   update: async (id, categoryData) => {
-    const response = await api.put(`/categories/${id}`, categoryData);
-    return response.data;
+    const category = mockCategories.find(c => c.id === parseInt(id));
+    const updatedCategory = { ...category, ...categoryData };
+    return { data: updatedCategory };
   },
   delete: async (id) => {
-    const response = await api.delete(`/categories/${id}`);
-    return response.data;
+    return { data: { message: 'Categoría eliminada con éxito' } };
   },
 };
 
 export const profileService = {
   get: async () => {
-    const response = await api.get('/users/profile');
-    return response.data;
+    return { data: mockUser };
   },
   update: async (profileData) => {
-    const response = await api.put('/users/profile', profileData);
-    return response.data;
+    const updatedUser = { ...mockUser, ...profileData };
+    return { data: updatedUser };
   },
   delete: async () => {
-    const response = await api.delete('/users/profile');
-    return response.data;
+    return { data: { message: 'Perfil eliminado con éxito' } };
   },
-};
-
-export default api; 
+}; 
