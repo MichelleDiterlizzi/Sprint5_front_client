@@ -19,8 +19,8 @@ const EventDetail = () => {
   const fetchEventDetails = async () => {
     try {
       const response = await eventService.getById(id);
-      setEvent(response.event);
-      setAttending(response.event?.attendees?.some((a) => a.id === user?.id));
+      setEvent(response.data);
+      setAttending(response.data?.attendees?.some((a) => a.id === user?.id));
       setLoading(false);
     } catch (err) {
       console.error('Error fetching event details:', err);
