@@ -10,27 +10,36 @@ import EventDetail from './pages/EventDetail';
 import EditEvent from './pages/EditEvent';
 import Profile from './pages/Profile';
 import Home from './pages/Home';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+
+const theme = createTheme();
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <SearchProvider>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/events" element={<EventList />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/events/new" element={<CreateEvent />} />
-              <Route path="/events/:id" element={<EventDetail />} />
-              <Route path="/events/:id/edit" element={<EditEvent />} />
-              <Route path="/profile" element={<Profile />} />
-            </Routes>
-          </Layout>
-        </SearchProvider>
-      </AuthProvider>
-    </Router>
+    <ThemeProvider theme={theme}>
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <Router>
+          <AuthProvider>
+            <SearchProvider>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/events" element={<EventList />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/events/new" element={<CreateEvent />} />
+                  <Route path="/events/:id" element={<EventDetail />} />
+                  <Route path="/events/:id/edit" element={<EditEvent />} />
+                  <Route path="/profile" element={<Profile />} />
+                </Routes>
+              </Layout>
+            </SearchProvider>
+          </AuthProvider>
+        </Router>
+      </LocalizationProvider>
+    </ThemeProvider>
   );
 }
 
