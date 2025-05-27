@@ -11,7 +11,7 @@ const FILTERS = [
 ];
 
 const removeDiacritics = str =>
-  str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  str.normalize('NFD').replace(/\u0300-\u036f/g, '').toLowerCase();
 
 const Home = () => {
   const [all, setAll] = useState([]);
@@ -22,6 +22,7 @@ const Home = () => {
   const [showCategories, setShowCategories] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const { search } = useContext(SearchContext);
   const navigate = useNavigate();
 
@@ -61,15 +62,24 @@ const Home = () => {
     setShowCategories((prev) => !prev);
   };
 
+  const handleFilterClick = (key) => {
+    setActive(key);
+    setSelectedCategory(null);
+  };
+
   let eventsToShow = [];
   if (active === 'all') eventsToShow = all;
   if (active === 'popular') eventsToShow = popular;
   if (active === 'free') eventsToShow = free;
-  const filteredEvents = search.trim()
-    ? eventsToShow.filter(event =>
-        removeDiacritics(event.title).includes(removeDiacritics(search))
-      )
-    : eventsToShow;
+  const filteredEvents = eventsToShow.filter(event => {
+    const matchesSearch = search.trim()
+      ? removeDiacritics(event.title).includes(removeDiacritics(search))
+      : true;
+    const matchesCategory = selectedCategory
+      ? event.category && event.category.id === selectedCategory
+      : true;
+    return matchesSearch && matchesCategory;
+  });
 
   const getCategoryImage = (cat) => {
     if (cat.image) {
@@ -96,7 +106,7 @@ const Home = () => {
           <button
             key={f.key}
             className={`px-4 py-2 rounded-lg font-semibold border transition-colors duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${active === f.key ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-indigo-600 border-gray-300 hover:bg-indigo-50'}`}
-            onClick={() => setActive(f.key)}
+            onClick={() => handleFilterClick(f.key)}
           >
             {f.label}
           </button>
@@ -118,7 +128,13 @@ const Home = () => {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {categories.map(cat => (
-                <div key={cat.id} className="flex flex-col items-center p-2 bg-white rounded shadow">
+                <div
+                  key={cat.id}
+                  className={`flex flex-col items-center p-2 bg-white rounded shadow cursor-pointer border transition
+                    ${selectedCategory === cat.id ? 'border-indigo-500 ring-2 ring-indigo-300' : 'border-transparent'}`}
+                  onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
+                  title="Ver eventos de esta categoría"
+                >
                   <img
                     src={getCategoryImage(cat)}
                     alt={cat.name}
