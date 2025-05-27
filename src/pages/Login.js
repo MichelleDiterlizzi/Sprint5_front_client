@@ -40,7 +40,7 @@ const Login = () => {
       const response = await authService.login(formData);
       login(response.user, response.token);
       toast.success('Login successful!');
-      navigate('/events');
+      navigate('/');
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error.response?.data?.message || 'Login failed');

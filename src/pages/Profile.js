@@ -20,6 +20,7 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Alert,
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { profileService, eventService } from '../services/api';
@@ -38,6 +39,9 @@ const Profile = () => {
   const [createdEvents, setCreatedEvents] = useState([]);
   const [attendingEvents, setAttendingEvents] = useState([]);
   const [editMode, setEditMode] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
 
@@ -76,28 +80,77 @@ const Profile = () => {
     fetchEvents();
   }, [isAuthenticated, navigate, user]);
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateForm = async () => {
+    let valid = true;
+    // Email
+    if (!validateEmail(formData.email)) {
+      setEmailError('Please enter a valid email address');
+      valid = false;
+    } else {
+      setEmailError('');
+    }
+    // Password
+    if (formData.password && formData.password.length < 9) {
+      setPasswordError('Password must be at least 9 characters');
+      valid = false;
+    } else {
+      setPasswordError('');
+    }
+    // Confirm Password
+    if (formData.password && formData.password !== formData.password_confirmation) {
+      setConfirmPasswordError('Passwords do not match');
+      valid = false;
+    } else {
+      setConfirmPasswordError('');
+    }
+    return valid;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // Validación en tiempo real
+    if (name === 'email') {
+      if (value && !validateEmail(value)) {
+        setEmailError('Please enter a valid email address');
+      } else {
+        setEmailError('');
+      }
+    }
+    if (name === 'password') {
+      if (value && value.length < 9) {
+        setPasswordError('Password must be at least 9 characters');
+      } else {
+        setPasswordError('');
+      }
+      if (formData.password_confirmation && value !== formData.password_confirmation) {
+        setConfirmPasswordError('Passwords do not match');
+      } else {
+        setConfirmPasswordError('');
+      }
+    }
+    if (name === 'password_confirmation') {
+      if (value !== formData.password) {
+        setConfirmPasswordError('Passwords do not match');
+      } else {
+        setConfirmPasswordError('');
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('handleSubmit called');
-    console.log('formData:', formData);
-    let hasError = false;
-    if (formData.password && formData.password.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      hasError = true;
-    }
-    if (formData.password && formData.password !== formData.password_confirmation) {
-      toast.error('Passwords do not match');
-      hasError = true;
-    }
-    if (hasError) return;
+    const isValid = await validateForm();
+    if (!isValid) return;
     setSubmitting(true);
     try {
       const updateData = {
@@ -105,9 +158,7 @@ const Profile = () => {
         email: formData.email,
         ...(formData.password && { password: formData.password }),
       };
-      console.log('Sending update:', updateData);
       const response = await profileService.update(updateData);
-      console.log('Update response:', response);
       toast.success('Profile updated successfully!');
       setFormData((prev) => ({
         ...prev,
@@ -115,6 +166,9 @@ const Profile = () => {
         password_confirmation: '',
       }));
       setEditMode(false);
+      setPasswordError('');
+      setEmailError('');
+      setConfirmPasswordError('');
       // Recargar datos de perfil tras guardar
       const refreshed = await profileService.get();
       setFormData({
@@ -124,11 +178,13 @@ const Profile = () => {
         password_confirmation: '',
       });
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Error: ' + (error.response?.data?.message || error.message));
       if (error.response?.data?.errors) {
-        error.response.data.errors.forEach(msg => toast.error(msg));
+        error.response.data.errors.forEach(msg => {
+          if (msg.toLowerCase().includes('email')) setEmailError(msg);
+          if (msg.toLowerCase().includes('password')) setPasswordError(msg);
+        });
       }
+      toast.error('Error: ' + (error.response?.data?.message || error.message));
     } finally {
       setSubmitting(false);
     }
@@ -145,6 +201,12 @@ const Profile = () => {
       toast.error('Failed to delete account');
     }
     setOpenDialog(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    toast.success('Logged out successfully');
   };
 
   if (loading) {
@@ -168,16 +230,28 @@ const Profile = () => {
       <Grid container spacing={4}>
         <Grid item xs={12} md={8}>
           <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Profile
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h4" component="h1">
+                Profile
+              </Typography>
+            </Box>
+            
             {!editMode ? (
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle1"><b>Name:</b> {formData.name}</Typography>
                 <Typography variant="subtitle1"><b>Email:</b> {formData.email}</Typography>
-                <Button variant="outlined" sx={{ mt: 2 }} onClick={() => setEditMode(true)}>
-                  Edit Profile
-                </Button>
+                <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+                  <Button variant="outlined" onClick={() => setEditMode(true)}>
+                    Edit Profile
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    color="error" 
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </Button>
+                </Box>
               </Box>
             ) : (
               <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
@@ -201,43 +275,54 @@ const Profile = () => {
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
+                  error={!!emailError}
+                  helperText={emailError}
                 />
-                <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-                  Change Password
-                </Typography>
                 <TextField
                   margin="normal"
                   fullWidth
-                  name="password"
-                  label="New Password"
-                  type="password"
                   id="password"
+                  label="New Password"
+                  name="password"
+                  type="password"
                   value={formData.password}
                   onChange={handleChange}
+                  error={!!passwordError}
+                  helperText={passwordError}
                 />
                 <TextField
                   margin="normal"
                   fullWidth
-                  name="password_confirmation"
-                  label="Confirm New Password"
-                  type="password"
                   id="password_confirmation"
+                  label="Confirm New Password"
+                  name="password_confirmation"
+                  type="password"
                   value={formData.password_confirmation}
                   onChange={handleChange}
+                  error={!!confirmPasswordError}
+                  helperText={confirmPasswordError}
                 />
-                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
                   <Button
                     type="submit"
                     variant="contained"
-                    disabled={submitting}
+                    disabled={submitting || !!passwordError || !!emailError || !!confirmPasswordError}
                   >
                     {submitting ? 'Saving...' : 'Save Changes'}
                   </Button>
                   <Button
                     variant="outlined"
-                    color="secondary"
-                    onClick={() => setEditMode(false)}
-                    disabled={submitting}
+                    onClick={() => {
+                      setEditMode(false);
+                      setPasswordError('');
+                      setEmailError('');
+                      setConfirmPasswordError('');
+                      setFormData(prev => ({
+                        ...prev,
+                        password: '',
+                        password_confirmation: ''
+                      }));
+                    }}
                   >
                     Cancel
                   </Button>
