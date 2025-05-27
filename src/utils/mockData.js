@@ -100,4 +100,16 @@ export const mockUser = {
   email: "usuario@ejemplo.com",
   created_at: "2024-03-01T10:00:00",
   updated_at: "2024-03-01T10:00:00"
-}; 
+};
+
+export const mockUsers = [
+  {
+    id: 1,
+    name: "Usuario Ejemplo",
+    email: "usuario@ejemplo.com",
+    password: "12345678",
+    created_at: "2024-03-01T10:00:00",
+    updated_at: "2024-03-01T10:00:00"
+  },
+  // Puedes agregar más usuarios aquí si lo deseas
+]; 

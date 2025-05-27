@@ -9,11 +9,13 @@ import {
   Button,
   Grid,
   Link,
+  Alert,
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
+import { mockUsers } from '../utils/mockData';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -21,6 +23,7 @@ const Login = () => {
     password: '',
   });
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -30,23 +33,28 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
+    setFormError(''); // Limpiar error al escribir
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const response = await authService.login(formData);
-      login(response.user, response.token);
-      toast.success('Login successful!');
-      navigate('/');
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error(error.response?.data?.message || 'Login failed');
-    } finally {
+    const foundUser = mockUsers.find(
+      u => u.email === formData.email && u.password === formData.password
+    );
+
+    if (!foundUser) {
+      setFormError('Invalid credentials. Please check your email and password.');
+      toast.error('Invalid credentials');
       setLoading(false);
+      return;
     }
+
+    login(foundUser, null);
+    toast.success('Login successful!');
+    navigate('/');
+    setLoading(false);
   };
 
   return (
@@ -90,6 +98,9 @@ const Login = () => {
             value={formData.password}
             onChange={handleChange}
           />
+          {formError && (
+            <Alert severity="error" sx={{ mt: 2 }}>{formError}</Alert>
+          )}
           <Button
             type="submit"
             fullWidth

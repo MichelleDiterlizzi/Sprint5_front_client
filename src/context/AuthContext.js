@@ -3,19 +3,28 @@ import { createContext, useContext, useState } from 'react';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  // Intenta cargar usuario y token de localStorage
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('mockUser');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [token, setToken] = useState(localStorage.getItem('token'));
 
+  // Permite login con o sin token (para mockData)
   const login = (userData, authToken) => {
     setUser(userData);
-    setToken(authToken);
-    localStorage.setItem('token', authToken);
+    if (authToken) {
+      setToken(authToken);
+      localStorage.setItem('token', authToken);
+    }
+    localStorage.setItem('mockUser', JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('mockUser');
   };
 
   const value = {
@@ -23,7 +32,8 @@ export const AuthProvider = ({ children }) => {
     token,
     login,
     logout,
-    isAuthenticated: !!token,
+    // Considera autenticado si hay usuario (mock) o token real
+    isAuthenticated: !!user || !!token,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
