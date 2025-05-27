@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { eventService, categoryService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { mockEvents } from '../utils/mockData';
+import { SearchContext } from '../context/SearchContext';
 
 const FILTERS = [
   { key: 'all', label: 'Todos' },
   { key: 'popular', label: 'Populares' },
   { key: 'free', label: 'Gratuitos' },
 ];
+
+const removeDiacritics = str =>
+  str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 const Home = () => {
   const [all, setAll] = useState([]);
@@ -17,6 +22,7 @@ const Home = () => {
   const [showCategories, setShowCategories] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const { search } = useContext(SearchContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,9 +61,15 @@ const Home = () => {
     setShowCategories((prev) => !prev);
   };
 
-  let eventsToShow = all;
+  let eventsToShow = [];
+  if (active === 'all') eventsToShow = all;
   if (active === 'popular') eventsToShow = popular;
   if (active === 'free') eventsToShow = free;
+  const filteredEvents = search.trim()
+    ? eventsToShow.filter(event =>
+        removeDiacritics(event.title).includes(removeDiacritics(search))
+      )
+    : eventsToShow;
 
   const getCategoryImage = (cat) => {
     if (cat.image) {
@@ -124,10 +136,10 @@ const Home = () => {
         <div className="text-center py-8">Cargando eventos...</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {eventsToShow.length === 0 ? (
+          {filteredEvents.length === 0 ? (
             <div className="col-span-full text-center text-gray-500 py-8 w-full">No hay eventos para mostrar</div>
           ) : (
-            eventsToShow.map(event => {
+            filteredEvents.map(event => {
               return (
                 <div
                   key={event.id}

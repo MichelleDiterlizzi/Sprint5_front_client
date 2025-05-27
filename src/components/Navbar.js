@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -7,11 +7,12 @@ import SearchIcon from '@mui/icons-material/Search';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Paper from '@mui/material/Paper';
+import { SearchContext } from '../context/SearchContext';
 
 const Navbar = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
+  const { search, setSearch } = useContext(SearchContext);
 
   const handleProfileClick = () => {
     navigate(isAuthenticated ? '/profile' : '/login');
