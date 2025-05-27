@@ -3,10 +3,15 @@ import { createContext, useContext, useState } from 'react';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  // Intenta cargar usuario y token de localStorage
+  // Intenta cargar usuario y token de localStorage de forma robusta
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('mockUser');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      if (!saved || saved === 'undefined') return null;
+      return JSON.parse(saved);
+    } catch {
+      return null;
+    }
   });
   const [token, setToken] = useState(localStorage.getItem('token'));
 
