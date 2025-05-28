@@ -118,6 +118,11 @@ const EventDetail = () => {
       user.role === 'admin'
     );
 
+  // Calcular el número total de participantes (incluyendo guests)
+  const totalParticipants = event.attendees
+    ? event.attendees.reduce((sum, attendee) => sum + 1 + (attendee.guests || 0), 0)
+    : 0;
+
   return (
     <div className="bg-gray-100 min-h-screen pt-8 pb-2">
       {/* Header */}
@@ -172,6 +177,9 @@ const EventDetail = () => {
             <div className="mb-2">
               <h2 className="text-xs font-semibold mb-0.5">Descripción</h2>
               <p className="text-xs lg:text-sm text-gray-600 break-words">{event.description}</p>
+            </div>
+            <div className="mb-2">
+              <span className="text-xs font-semibold">Participantes actuales: {totalParticipants}</span>
             </div>
             <div className="flex gap-1 mb-2">
               <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs">

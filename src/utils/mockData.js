@@ -47,7 +47,14 @@ export const mockEvents = [
       name: "Tech Academy",
       email: "tech@ejemplo.com"
     },
-    attendees: []
+    attendees: [
+      {
+        id: 1,
+        name: "Usuario Ejemplo",
+        email: "usuario@ejemplo.com",
+        guests: 5
+      }
+    ]
   },
   {
     id: 3,
