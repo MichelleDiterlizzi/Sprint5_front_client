@@ -9,6 +9,7 @@ import {
   Button,
   Grid,
   Link,
+  Alert,
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { toast } from 'react-toastify';
@@ -25,6 +26,8 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,8 +39,21 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.password_confirmation) {
-      toast.error('Passwords do not match');
+    setFormError('');
+    setFieldErrors({});
+
+    // Validaciones
+    const errors = {};
+    if (!formData.name.trim()) errors.name = 'Name is required';
+    if (!formData.email.trim()) errors.email = 'Email is required';
+    if (!formData.password) errors.password = 'Password is required';
+    if (!formData.password_confirmation) errors.password_confirmation = 'Confirm password is required';
+    if (formData.password && formData.password.length < 8) errors.password = 'Password must be at least 8 characters';
+    if (formData.password !== formData.password_confirmation) errors.password_confirmation = 'Passwords do not match';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setFormError('Please fix the errors in the form.');
       return;
     }
 
@@ -50,6 +66,7 @@ const Register = () => {
       navigate('/events');
     } catch (error) {
       console.error('Registration error:', error);
+      setFormError(error.response?.data?.message || 'Registration failed');
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
@@ -73,6 +90,9 @@ const Register = () => {
           Sign up
         </Typography>
         <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
+          {formError && (
+            <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>
+          )}
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
@@ -84,6 +104,8 @@ const Register = () => {
                 autoComplete="name"
                 value={formData.name}
                 onChange={handleChange}
+                error={!!fieldErrors.name}
+                helperText={fieldErrors.name}
               />
             </Grid>
             <Grid item xs={12}>
@@ -96,6 +118,8 @@ const Register = () => {
                 autoComplete="email"
                 value={formData.email}
                 onChange={handleChange}
+                error={!!fieldErrors.email}
+                helperText={fieldErrors.email}
               />
             </Grid>
             <Grid item xs={12}>
@@ -109,6 +133,8 @@ const Register = () => {
                 autoComplete="new-password"
                 value={formData.password}
                 onChange={handleChange}
+                error={!!fieldErrors.password}
+                helperText={fieldErrors.password}
               />
             </Grid>
             <Grid item xs={12}>
@@ -121,6 +147,8 @@ const Register = () => {
                 id="password_confirmation"
                 value={formData.password_confirmation}
                 onChange={handleChange}
+                error={!!fieldErrors.password_confirmation}
+                helperText={fieldErrors.password_confirmation}
               />
             </Grid>
           </Grid>
