@@ -70,7 +70,7 @@ const Profile = () => {
       try {
         const allEvents = await eventService.getAll();
         const events = Array.isArray(allEvents.data) ? allEvents.data : [];
-        setCreatedEvents(events.filter(e => e.creator_id === user?.id));
+        setCreatedEvents(events.filter(e => e.creator?.id === user?.id));
         setAttendingEvents(events.filter(e => e.attendees?.some(a => a.id === user?.id)));
       } catch (error) {
         toast.error('Failed to load your events');

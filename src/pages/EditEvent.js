@@ -54,13 +54,14 @@ const EditEvent = () => {
 
         const event = eventResponse.data.find((e) => e.id === parseInt(id));
         if (!event) {
-          toast.error('Event not found');
+          toast.error('Evento no encontrado');
           navigate('/events');
           return;
         }
 
-        if (event.user_id !== user?.id) {
-          toast.error('You are not authorized to edit this event');
+        // Verificar si el usuario es el creador o un administrador
+        if (event.creator?.id !== user?.id && user?.role !== 'admin') {
+          toast.error('No tienes permiso para editar este evento');
           navigate('/events');
           return;
         }
@@ -79,7 +80,7 @@ const EditEvent = () => {
         if (event.image) setImagePreview(event.image);
       } catch (error) {
         console.error('Error fetching data:', error);
-        toast.error('Failed to load event data');
+        toast.error('Error al cargar los datos del evento');
         navigate('/events');
       } finally {
         setLoading(false);
@@ -125,12 +126,35 @@ const EditEvent = () => {
 
   const validate = () => {
     const newErrors = {};
+    
+    if (!formData.title.trim()) {
+      newErrors.title = 'El título es obligatorio';
+    }
+    
+    if (!formData.description.trim()) {
+      newErrors.description = 'La descripción es obligatoria';
+    }
+    
+    if (!formData.date) {
+      newErrors.date = 'La fecha es obligatoria';
+    }
+    
+    if (!formData.location.trim()) {
+      newErrors.location = 'La ubicación es obligatoria';
+    }
+    
     if (!isFree && (!formData.price || Number(formData.price) <= 0)) {
-      newErrors.price = 'El precio debe ser mayor que 0 si el evento no es gratuito.';
+      newErrors.price = 'El precio debe ser mayor que 0 si el evento no es gratuito';
     }
+    
+    if (!formData.category_id) {
+      newErrors.category_id = 'La categoría es obligatoria';
+    }
+    
     if (imageFile && !imageFile.type.startsWith('image/')) {
-      newErrors.image = 'El archivo debe ser una imagen.';
+      newErrors.image = 'El archivo debe ser una imagen';
     }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -173,6 +197,8 @@ const EditEvent = () => {
               name="title"
               value={formData.title}
               onChange={handleChange}
+              error={!!errors.title}
+              helperText={errors.title}
             />
 
             <TextField
@@ -186,6 +212,8 @@ const EditEvent = () => {
               name="description"
               value={formData.description}
               onChange={handleChange}
+              error={!!errors.description}
+              helperText={errors.description}
             />
 
             <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -200,6 +228,8 @@ const EditEvent = () => {
                     required
                     fullWidth
                     name="date"
+                    error={!!errors.date}
+                    helperText={errors.date}
                   />
                 )}
               />
@@ -214,6 +244,8 @@ const EditEvent = () => {
               name="location"
               value={formData.location}
               onChange={handleChange}
+              error={!!errors.location}
+              helperText={errors.location}
             />
 
             <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
@@ -245,7 +277,7 @@ const EditEvent = () => {
               helperText={errors.price}
             />
 
-            <FormControl fullWidth margin="normal">
+            <FormControl fullWidth margin="normal" error={!!errors.category_id}>
               <InputLabel id="category-label">Category</InputLabel>
               <Select
                 labelId="category-label"
@@ -260,6 +292,11 @@ const EditEvent = () => {
                   <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
                 ))}
               </Select>
+              {errors.category_id && (
+                <Typography color="error" variant="caption">
+                  {errors.category_id}
+                </Typography>
+              )}
             </FormControl>
 
             <Box sx={{ mt: 2 }}>

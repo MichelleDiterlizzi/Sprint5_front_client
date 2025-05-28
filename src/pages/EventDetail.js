@@ -73,6 +73,7 @@ const EventDetail = () => {
   };
 
   const handleEdit = () => {
+    console.log('id para editar:', id);
     navigate(`/events/${id}/edit`);
   };
 
@@ -103,7 +104,19 @@ const EventDetail = () => {
     return 'https://picsum.photos/800/400';
   };
 
-  const isCreator = user && (event.user_id === user.id || user.role === 'admin');
+  // Debug logs para ver los valores
+  console.log('user:', user);
+  console.log('event.user_id:', event.user_id);
+  console.log('event.creator?.id:', event.creator?.id);
+  console.log('user.role:', user?.role);
+
+  const isCreator =
+    user &&
+    (
+      event.user_id === user.id ||
+      event.creator?.id === user.id ||
+      user.role === 'admin'
+    );
 
   return (
     <div className="bg-gray-100 min-h-screen pt-8 pb-2">
@@ -118,127 +131,125 @@ const EventDetail = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden p-2 pb-0">
-        <div className="max-w-4xl mx-auto bg-white rounded-b shadow p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 mb-0">
-          {/* Image Section */}
-          <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-auto">
-            <div className="w-full h-full">
-              <div className="flex items-center justify-center">
-                <img
-                  src={getEventImage(event)}
-                  alt={event.title}
-                  className="w-full max-w-xl object-contain rounded shadow"
-                  style={{ maxHeight: '420px' }}
-                />
+      <div className="max-w-4xl mx-auto bg-white rounded-b shadow p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 mb-0">
+        {/* Image Section */}
+        <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-auto">
+          <div className="w-full h-full">
+            <div className="flex items-center justify-center">
+              <img
+                src={getEventImage(event)}
+                alt={event.title}
+                className="w-full max-w-xl object-contain rounded shadow"
+                style={{ maxHeight: '420px' }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Details Section */}
+        <div className="bg-white rounded p-2 flex flex-col h-full">
+          <div className="flex-1">
+            <h1 className="text-base lg:text-lg font-bold mb-1 break-words">{event.title}</h1>
+            <div className="space-y-1 mb-2">
+              <div className="flex items-center text-xs">
+                <span className="text-gray-500 mr-1">📍</span>
+                <span>
+                  {event.location}
+                  {event.address && ` - ${event.address}`}
+                </span>
               </div>
+              <div className="flex items-center text-xs">
+                <span className="text-gray-500 mr-1">📅</span>
+                <span>{new Date(event.event_date).toLocaleString('es-ES', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}</span>
+              </div>
+            </div>
+            <div className="mb-2">
+              <h2 className="text-xs font-semibold mb-0.5">Descripción</h2>
+              <p className="text-xs lg:text-sm text-gray-600 break-words">{event.description}</p>
+            </div>
+            <div className="flex gap-1 mb-2">
+              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs">
+                {event.category?.name || 'Sin categoría'}
+              </span>
+              {event.is_free && (
+                <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full text-xs">
+                  Gratuito
+                </span>
+              )}
+            </div>
+            <div className="text-xs mb-1">
+              <span className="text-gray-500">Creado por: </span>
+              <span className="font-medium">{event.creator?.name || 'Anónimo'}</span>
+            </div>
+            <div className="text-base font-semibold text-gray-800 mb-2">
+              {event.is_free ? (
+                <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full">GRATUITO</span>
+              ) : (
+                <span className="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full border border-yellow-300">{event.price}€</span>
+              )}
             </div>
           </div>
 
-          {/* Details Section */}
-          <div className="bg-white rounded p-2 flex flex-col h-full">
-            <div className="flex-1">
-              <h1 className="text-base lg:text-lg font-bold mb-1 break-words">{event.title}</h1>
-              <div className="space-y-1 mb-2">
-                <div className="flex items-center text-xs">
-                  <span className="text-gray-500 mr-1">📍</span>
-                  <span>
-                    {event.location}
-                    {event.address && ` - ${event.address}`}
-                  </span>
-                </div>
-                <div className="flex items-center text-xs">
-                  <span className="text-gray-500 mr-1">📅</span>
-                  <span>{new Date(event.event_date).toLocaleString('es-ES', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}</span>
-                </div>
-              </div>
-              <div className="mb-2">
-                <h2 className="text-xs font-semibold mb-0.5">Descripción</h2>
-                <p className="text-xs lg:text-sm text-gray-600 break-words">{event.description}</p>
-              </div>
-              <div className="flex gap-1 mb-2">
-                <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-xs">
-                  {event.category?.name || 'Sin categoría'}
-                </span>
-                {event.is_free && (
-                  <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full text-xs">
-                    Gratuito
-                  </span>
-                )}
-              </div>
-              <div className="text-xs mb-1">
-                <span className="text-gray-500">Creado por: </span>
-                <span className="font-medium">{event.creator?.name || 'Anónimo'}</span>
-              </div>
-              <div className="text-base font-semibold text-gray-800 mb-2">
-                {event.is_free ? (
-                  <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full">GRATUITO</span>
-                ) : (
-                  <span className="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full border border-yellow-300">{event.price}€</span>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons - Now at the bottom */}
-            <div className="mt-auto pt-4 border-t">
-              {isAuthenticated && !isCreator && (
-                <Button
-                  variant={attending ? "contained" : "outlined"}
-                  color={attending ? "error" : "primary"}
-                  style={{ fontWeight: 500, fontSize: '1.1rem', marginTop: '1rem' }}
-                  onClick={handleAttendance}
-                  fullWidth
-                >
-                  {attending ? 'Eliminar participación' : 'Participa al evento'}
-                </Button>
-              )}
-              {!isAuthenticated && (
+          {/* Action Buttons */}
+          <div className="mt-auto pt-4 border-t">
+            {isAuthenticated && !isCreator && (
+              <Button
+                variant={attending ? "contained" : "outlined"}
+                color={attending ? "error" : "primary"}
+                style={{ fontWeight: 500, fontSize: '1.1rem', marginTop: '1rem' }}
+                onClick={handleAttendance}
+                fullWidth
+              >
+                {attending ? 'Eliminar participación' : 'Participa al evento'}
+              </Button>
+            )}
+            {!isAuthenticated && (
+              <Button
+                variant="outlined"
+                style={{
+                  color: pink,
+                  borderColor: pink,
+                  fontWeight: 500,
+                  fontSize: '1.1rem',
+                  marginTop: '1rem',
+                }}
+                size="large"
+                fullWidth
+                onClick={() => navigate('/login')}
+              >
+                Participar en el Evento
+              </Button>
+            )}
+            {isCreator && (
+              <div className="flex gap-2 mt-2">
                 <Button
                   variant="outlined"
-                  style={{
-                    color: pink,
-                    borderColor: pink,
-                    fontWeight: 500,
-                    fontSize: '1.1rem',
-                    marginTop: '1rem',
-                  }}
+                  color="primary"
                   size="large"
                   fullWidth
-                  onClick={() => navigate('/login')}
+                  style={{ fontWeight: 500, fontSize: '1.1rem' }}
+                  onClick={handleEdit}
                 >
-                  Participar en el Evento
+                  Editar Evento
                 </Button>
-              )}
-              {isCreator && (
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    size="large"
-                    fullWidth
-                    style={{ fontWeight: 500, fontSize: '1.1rem' }}
-                    onClick={handleEdit}
-                  >
-                    Editar Evento
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="large"
-                    fullWidth
-                    style={{ fontWeight: 500, fontSize: '1.1rem' }}
-                    onClick={handleDelete}
-                  >
-                    Eliminar Evento
-                  </Button>
-                </div>
-              )}
-            </div>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="large"
+                  fullWidth
+                  style={{ fontWeight: 500, fontSize: '1.1rem' }}
+                  onClick={handleDelete}
+                >
+                  Eliminar Evento
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
